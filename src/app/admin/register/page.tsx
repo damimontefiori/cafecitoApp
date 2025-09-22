@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithGoogle, handleRedirectResult } from '@/services/auth-service';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { signInWithGoogle } from '@/services/auth-service';
 import { createBusiness, getBusinessByAdminId } from '@/services/business-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Coffee } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { auth } from '@/lib/firebase';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: 'El nombre del negocio debe tener al menos 2 caracteres.' }),
@@ -21,10 +23,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminRegister() {
+  const [user, loading, error] = useAuthState(auth);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [step, setStep] = useState<'auth' | 'register'>('auth');
-  const [checkingRedirect, setCheckingRedirect] = useState(true);
+  const [businessCheckDone, setBusinessCheckDone] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -35,51 +37,50 @@ export default function AdminRegister() {
     },
   });
 
-  // Check for redirect result on page load
+  // Handle user authentication state changes
   useEffect(() => {
-    const checkRedirectResult = async () => {
-      try {
-        const user = await handleRedirectResult();
-        if (user) {
-          setUser(user);
-          // Check if user already has a business
+    if (loading) return; // Still checking auth state
+    
+    if (user && !businessCheckDone) {
+      // User is authenticated, check if they have a business
+      const checkBusiness = async () => {
+        try {
           const existingBusiness = await getBusinessByAdminId(user.uid);
           if (existingBusiness) {
             router.push(`/admin/${existingBusiness.id}`);
           } else {
             setStep('register');
           }
+        } catch (error) {
+          console.error('Error checking business:', error);
+          setStep('register');
+        } finally {
+          setBusinessCheckDone(true);
         }
-      } catch (error) {
-        console.error('Error handling redirect result:', error);
-      } finally {
-        setCheckingRedirect(false);
-      }
-    };
-
-    checkRedirectResult();
-  }, [router]);
+      };
+      
+      checkBusiness();
+    } else if (!user && !loading) {
+      // User is not authenticated
+      setStep('auth');
+      setBusinessCheckDone(true);
+    }
+  }, [user, loading, businessCheckDone, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const user = await signInWithGoogle();
+      const result = await signInWithGoogle();
       
       // If signInWithGoogle returns null, it means redirect was initiated
-      if (user === null) {
+      if (result === null) {
         // Redirect will happen, no need to do anything
         return;
       }
       
-      setUser(user);
+      // If we get a user back (popup worked), the useEffect will handle the business check
+      // No need to do anything here as useEffect will trigger
       
-      // Check if user already has a business
-      const existingBusiness = await getBusinessByAdminId(user.uid);
-      if (existingBusiness) {
-        router.push(`/admin/${existingBusiness.id}`);
-      } else {
-        setStep('register');
-      }
     } catch (error: any) {
       console.error('Authentication error details:', error);
       
@@ -151,7 +152,7 @@ export default function AdminRegister() {
           </div>
           <CardTitle className="text-2xl">CafeCito Admin</CardTitle>
           <CardDescription>
-            {checkingRedirect 
+            {loading 
               ? 'Verificando autenticación...'
               : step === 'auth' 
                 ? 'Inicia sesión para administrar tu negocio' 
@@ -160,11 +161,11 @@ export default function AdminRegister() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {checkingRedirect ? (
+          {loading ? (
             <div className="space-y-4 text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto" />
               <p className="text-sm text-muted-foreground">
-                Procesando autenticación...
+                Verificando autenticación...
               </p>
             </div>
           ) : step === 'auth' ? (

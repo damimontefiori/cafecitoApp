@@ -1,6 +1,6 @@
 import { 
-  signInWithRedirect, 
   signInWithPopup,
+  signInWithRedirect, 
   getRedirectResult,
   signOut as firebaseSignOut, 
   onAuthStateChanged,
@@ -11,35 +11,30 @@ import { AdminUser } from '@/types';
 
 export const signInWithGoogle = async (): Promise<AdminUser | null> => {
   try {
-    // Primero intentar obtener resultado de redirect (si hubo uno)
-    const redirectResult = await getRedirectResult(auth);
-    if (redirectResult?.user) {
-      const user = redirectResult.user;
-      return {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || '',
-      };
+    // Try popup first (faster, better UX)
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    
+    return {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || '',
+    };
+  } catch (error: any) {
+    console.error('Popup failed, trying redirect:', error);
+    
+    // If popup fails, try redirect as fallback
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null; // Redirect will handle the auth
+      } catch (redirectError) {
+        console.error('Both popup and redirect failed:', redirectError);
+        throw redirectError;
+      }
     }
-
-    // Si no hay resultado de redirect, iniciar nuevo redirect
-    await signInWithRedirect(auth, googleProvider);
-    return null; // El redirect redirigirá la página
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-    // Si redirect falla, intentar con popup como fallback
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      return {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || '',
-      };
-    } catch (popupError) {
-      console.error('Both redirect and popup failed:', popupError);
-      throw popupError;
-    }
+    
+    throw error;
   }
 };
 
