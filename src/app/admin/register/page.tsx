@@ -47,10 +47,33 @@ export default function AdminRegister() {
       } else {
         setStep('register');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Authentication error details:', error);
+      
+      let errorMessage = "No se pudo iniciar sesión con Google.";
+      
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/unauthorized-domain':
+            errorMessage = "Dominio no autorizado. Contacta al administrador.";
+            break;
+          case 'auth/popup-blocked':
+            errorMessage = "El popup fue bloqueado. Permite popups para este sitio.";
+            break;
+          case 'auth/popup-closed-by-user':
+            errorMessage = "Autenticación cancelada por el usuario.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Error de conexión. Verifica tu internet.";
+            break;
+          default:
+            errorMessage = `Error: ${error.code} - ${error.message}`;
+        }
+      }
+      
       toast({
         title: "Error de autenticación",
-        description: "No se pudo iniciar sesión con Google.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
