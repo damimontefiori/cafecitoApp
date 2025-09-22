@@ -29,8 +29,7 @@ export default function Home() {
     name: string;
     coffeeType: CoffeeType;
     size: CoffeeSize;
-    specialInstructions: string;
-    aiSuggestion?: string;
+    specialInstructions?: string;
   }) => {
     const lastOrder = orders[0];
     const now = new Date();

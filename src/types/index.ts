@@ -18,9 +18,8 @@ export interface Order {
   name: string;
   coffeeType: CoffeeType;
   size: CoffeeSize;
-  specialInstructions: string;
+  specialInstructions?: string;
   pickupTime: Date;
-  aiSuggestion?: string;
 }
 
 export interface OrderDocument {
@@ -28,7 +27,6 @@ export interface OrderDocument {
   name: string;
   coffeeType: CoffeeType;
   size: CoffeeSize;
-  specialInstructions: string;
+  specialInstructions?: string;
   pickupTime: Timestamp;
-  aiSuggestion?: string;
 }

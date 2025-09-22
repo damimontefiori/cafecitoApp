@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { debounce } from '@/lib/utils';
+import { isWithinBusinessHours, getBusinessHoursMessage } from '@/lib/utils';
 
-import { adjustIngredients } from '@/ai/flows/ingredient-adjustment';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { type CoffeeSize, coffeeTypes } from '@/types';
-import { Loader2, Wand2 } from 'lucide-react';
+import { Loader2, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -27,13 +26,12 @@ const formSchema = z.object({
 type OrderFormValues = z.infer<typeof formSchema>;
 
 interface OrderFormProps {
-  onSubmit: (data: OrderFormValues & { aiSuggestion?: string }) => void;
+  onSubmit: (data: OrderFormValues) => void;
 }
 
 export default function OrderForm({ onSubmit }: OrderFormProps) {
   const [isSubmitting, startTransition] = useTransition();
-  const [aiSuggestion, setAiSuggestion] = useState<string>('');
-  const [isAISuggesting, setIsAISuggesting] = useState<boolean>(false);
+  const [isBusinessHours, setIsBusinessHours] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<OrderFormValues>({
@@ -46,37 +44,30 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
     },
   });
 
-  const debouncedAdjustIngredients = useCallback(
-    debounce(async (instructions: string) => {
-      if (instructions.trim().length > 10) {
-        setIsAISuggesting(true);
-        setAiSuggestion('');
-        try {
-          const result = await adjustIngredients({ orderDescription: instructions });
-          setAiSuggestion(result.suggestedAdjustments);
-        } catch (error) {
-          console.error('AI suggestion failed:', error);
-        } finally {
-          setIsAISuggesting(false);
-        }
-      } else {
-        setAiSuggestion('');
-      }
-    }, 1000),
-    []
-  );
-
-  const handleSpecialInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { value } = e.target;
-    form.setValue('specialInstructions', value);
-    debouncedAdjustIngredients(value);
-  };
+  useEffect(() => {
+    const checkBusinessHours = () => {
+      setIsBusinessHours(isWithinBusinessHours());
+    };
+    
+    checkBusinessHours();
+    const interval = setInterval(checkBusinessHours, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = (values: OrderFormValues) => {
+    if (!isBusinessHours) {
+      toast({
+        title: "Fuera de horario",
+        description: "Solo aceptamos pedidos de 9:00 a 17:00 horas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     startTransition(() => {
-      onSubmit({ ...values, aiSuggestion });
+      onSubmit(values);
       form.reset();
-      setAiSuggestion('');
       toast({
         title: "¡Pedido enviado!",
         description: "Tu café está en la cola. Revisa la hora de recogida.",
@@ -85,8 +76,26 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+    <div className="space-y-6">
+      {/* Business Hours Alert */}
+      <div className={`p-4 rounded-lg border flex items-center gap-3 ${
+        isBusinessHours 
+          ? 'bg-green-50 border-green-200 text-green-800' 
+          : 'bg-red-50 border-red-200 text-red-800'
+      }`}>
+        <Clock className="w-5 h-5" />
+        <div>
+          <p className="font-medium">
+            {isBusinessHours ? '¡Estamos abiertos!' : 'Cerrado'}
+          </p>
+          <p className="text-sm">
+            {getBusinessHoursMessage()}
+          </p>
+        </div>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -161,7 +170,6 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
                 <Textarea
                   placeholder="ej: shot extra, leche de avena, menos azúcar..."
                   {...field}
-                  onChange={handleSpecialInstructionsChange}
                 />
               </FormControl>
               <FormMessage />
@@ -169,28 +177,12 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
           )}
         />
 
-        {(isAISuggesting || aiSuggestion) && (
-          <div className="p-3 rounded-md bg-accent/10 border border-accent/20">
-            <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-accent">
-                <Wand2 className="w-4 h-4"/>
-                Sugerencia de IA
-            </h4>
-            {isAISuggesting ? (
-                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin"/>
-                    Analizando tu petición...
-                 </div>
-            ) : (
-                aiSuggestion && <p className="text-sm text-accent-foreground">{aiSuggestion}</p>
-            )}
-          </div>
-        )}
-
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting || !isBusinessHours}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Añadir a la cola
+          {isBusinessHours ? 'Añadir a la cola' : 'Cerrado - No disponible'}
         </Button>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </div>
   );
 }

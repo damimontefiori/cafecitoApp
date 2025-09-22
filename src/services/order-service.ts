@@ -23,6 +23,7 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<Order> {
     const ordersCol = collection(db, 'orders');
     const docRef = await addDoc(ordersCol, {
         ...order,
+        specialInstructions: order.specialInstructions || '',
         pickupTime: Timestamp.fromDate(order.pickupTime),
     });
     return {

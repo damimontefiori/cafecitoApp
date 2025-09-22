@@ -2,7 +2,7 @@ import { Order } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { Clock, User, Wand2 } from 'lucide-react';
+import { Clock, User } from 'lucide-react';
 
 interface OrderCardProps {
   order: Order;
@@ -31,28 +31,13 @@ export function OrderCard({ order }: OrderCardProps) {
           </div>
         </div>
       </CardHeader>
-      {(order.specialInstructions || order.aiSuggestion) && (
+      {order.specialInstructions && (
         <CardContent>
           <Separator className="mb-4" />
-          
-          {order.specialInstructions && (
-            <div className="mb-4">
-              <h4 className="font-semibold text-sm mb-1">Instrucciones especiales:</h4>
-              <p className="text-sm text-muted-foreground">{order.specialInstructions}</p>
-            </div>
-          )}
-
-          {order.aiSuggestion && (
-            <div>
-              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-accent">
-                <Wand2 className="w-4 h-4"/>
-                Sugerencia de IA
-              </h4>
-              <div className="text-sm bg-accent/10 p-3 rounded-md border border-accent/20">
-                <p className="text-foreground">{order.aiSuggestion}</p>
-              </div>
-            </div>
-          )}
+          <div>
+            <h4 className="font-semibold text-sm mb-1">Instrucciones especiales:</h4>
+            <p className="text-sm text-muted-foreground">{order.specialInstructions}</p>
+          </div>
         </CardContent>
       )}
     </Card>

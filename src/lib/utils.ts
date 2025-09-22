@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -11,10 +11,22 @@ export function debounce<F extends (...args: any[]) => any>(func: F, waitFor: nu
   const debounced = (...args: Parameters<F>) => {
     if (timeout !== null) {
       clearTimeout(timeout);
-      timeout = null;
     }
     timeout = setTimeout(() => func(...args), waitFor);
   };
 
-  return debounced as (...args: Parameters<F>) => void;
+  return debounced as (...args: Parameters<F>) => ReturnType<F>;
+}
+
+export function isWithinBusinessHours(): boolean {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= 9 && hour < 17;
+}
+
+export function getBusinessHoursMessage(): string {
+  if (isWithinBusinessHours()) {
+    return "¡Estamos abiertos! Haz tu pedido.";
+  }
+  return "Lo sentimos, solo aceptamos pedidos de 9:00 a 17:00 horas.";
 }
