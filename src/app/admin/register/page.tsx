@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithGoogle } from '@/services/auth-service';
+import { signInWithGoogle, handleRedirectResult } from '@/services/auth-service';
 import { createBusiness, getBusinessByAdminId } from '@/services/business-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ export default function AdminRegister() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [step, setStep] = useState<'auth' | 'register'>('auth');
+  const [checkingRedirect, setCheckingRedirect] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -34,10 +35,42 @@ export default function AdminRegister() {
     },
   });
 
+  // Check for redirect result on page load
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const user = await handleRedirectResult();
+        if (user) {
+          setUser(user);
+          // Check if user already has a business
+          const existingBusiness = await getBusinessByAdminId(user.uid);
+          if (existingBusiness) {
+            router.push(`/admin/${existingBusiness.id}`);
+          } else {
+            setStep('register');
+          }
+        }
+      } catch (error) {
+        console.error('Error handling redirect result:', error);
+      } finally {
+        setCheckingRedirect(false);
+      }
+    };
+
+    checkRedirectResult();
+  }, [router]);
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       const user = await signInWithGoogle();
+      
+      // If signInWithGoogle returns null, it means redirect was initiated
+      if (user === null) {
+        // Redirect will happen, no need to do anything
+        return;
+      }
+      
       setUser(user);
       
       // Check if user already has a business
@@ -118,14 +151,23 @@ export default function AdminRegister() {
           </div>
           <CardTitle className="text-2xl">CafeCito Admin</CardTitle>
           <CardDescription>
-            {step === 'auth' 
-              ? 'Inicia sesión para administrar tu negocio' 
-              : 'Registra tu negocio'
+            {checkingRedirect 
+              ? 'Verificando autenticación...'
+              : step === 'auth' 
+                ? 'Inicia sesión para administrar tu negocio' 
+                : 'Registra tu negocio'
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {step === 'auth' ? (
+          {checkingRedirect ? (
+            <div className="space-y-4 text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground">
+                Procesando autenticación...
+              </p>
+            </div>
+          ) : step === 'auth' ? (
             <div className="space-y-4">
               <Button 
                 onClick={handleGoogleSignIn} 

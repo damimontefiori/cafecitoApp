@@ -1,4 +1,37 @@
-# Reglas de Firestore recomendadas para Firebase Console
+# Reglas de Firestore - URGENTE CONFIGURAR
+
+## 🚨 IMPORTANTE: Configura estas reglas AHORA para solucionar el error "permission-denied"
+
+### Paso 1: Ve al Firebase Console
+1. Abre: https://console.firebase.google.com/
+2. Selecciona tu proyecto: **studio-281573522-77e6b**
+3. Ve a **"Firestore Database"** en el menú lateral
+4. Haz clic en la pestaña **"Rules"**
+
+### Paso 2: Reemplaza las reglas actuales con estas (TEMPORALES PARA TESTING):
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // REGLAS TEMPORALES - MUY PERMISIVAS PARA TESTING
+    // TODO: Restringir después de confirmar que funciona
+    
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+### Paso 3: Haz clic en "Publish"
+
+---
+
+## ⚠️ DESPUÉS DE TESTING: Usar reglas más seguras
+
+Una vez que confirmes que la autenticación funciona, reemplaza con estas reglas más seguras:
 
 ```javascript
 rules_version = '2';
@@ -35,14 +68,7 @@ service cloud.firestore {
 }
 ```
 
-# Instrucciones para configurar en Firebase Console:
-
-1. Ve a Firebase Console (https://console.firebase.google.com/)
-2. Selecciona tu proyecto "studio-281573522-77e6b"
-3. Ve a "Firestore Database" en el menú lateral
-4. Haz clic en la pestaña "Rules"
-5. Reemplaza las reglas actuales con las reglas de arriba
-6. Haz clic en "Publish"
-
-# Nota importante:
-Las reglas actuales probablemente están en modo restrictivo, lo que causa el error "permission-denied".
+## 🔧 Estado Actual del Error:
+- ❌ Cross-Origin-Opener-Policy: SOLUCIONADO (añadido a netlify.toml)
+- ❌ Missing permissions: NECESITA configuración de reglas de Firestore
+- ⏳ Redirect authentication: IMPLEMENTADO (necesita testing)
