@@ -39,20 +39,35 @@ export default function AdminRegister() {
 
   // Handle user authentication state changes
   useEffect(() => {
-    if (loading) return; // Still checking auth state
+    console.log('🔧 [RegisterPage] useEffect ejecutado:', { 
+      loading, 
+      user: user?.email, 
+      businessCheckDone, 
+      step 
+    });
+    
+    if (loading) {
+      console.log('⏳ [RegisterPage] Todavía cargando autenticación...');
+      return; // Still checking auth state
+    }
     
     if (user && !businessCheckDone) {
       // User is authenticated, check if they have a business
       const checkBusiness = async () => {
+        console.log('🔍 [RegisterPage] Verificando si el usuario ya tiene negocio...');
         try {
           const existingBusiness = await getBusinessByAdminId(user.uid);
+          console.log('📊 [RegisterPage] Negocio existente:', existingBusiness);
+          
           if (existingBusiness) {
+            console.log('✅ [RegisterPage] Usuario ya tiene negocio, redirigiendo...');
             router.push(`/admin/${existingBusiness.id}`);
           } else {
+            console.log('📝 [RegisterPage] Usuario no tiene negocio, mostrando formulario de registro');
             setStep('register');
           }
         } catch (error) {
-          console.error('Error checking business:', error);
+          console.error('🚨 [RegisterPage] Error checking business:', error);
           setStep('register');
         } finally {
           setBusinessCheckDone(true);
@@ -62,10 +77,11 @@ export default function AdminRegister() {
       checkBusiness();
     } else if (!user && !loading) {
       // User is not authenticated
+      console.log('❌ [RegisterPage] Usuario no autenticado');
       setStep('auth');
       setBusinessCheckDone(true);
     }
-  }, [user, loading, businessCheckDone, router]);
+  }, [user, loading, router]); // Removed businessCheckDone from dependencies
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -116,23 +132,36 @@ export default function AdminRegister() {
   };
 
   const handleBusinessRegistration = async (values: FormValues) => {
-    if (!user) return;
+    console.log('🏢 [RegisterPage] Iniciando registro de negocio:', values.businessName);
+    
+    if (!user) {
+      console.log('❌ [RegisterPage] No hay usuario autenticado');
+      return;
+    }
     
     setIsLoading(true);
     try {
+      console.log('📤 [RegisterPage] Llamando a createBusiness...');
       const business = await createBusiness({
         name: values.businessName,
         adminId: user.uid,
         adminEmail: user.email || '',
       });
 
+      console.log('✅ [RegisterPage] Negocio creado exitosamente:', business);
+
       toast({
         title: "¡Negocio registrado!",
         description: `${business.name} ha sido registrado exitosamente.`,
       });
 
-      router.push(`/admin/${business.id}`);
+      console.log('🧭 [RegisterPage] Navegando a:', `/admin/${business.id}`);
+      
+      // Use window.location.href for immediate navigation to avoid conflicts
+      window.location.href = `/admin/${business.id}`;
+      
     } catch (error) {
+      console.error('🚨 [RegisterPage] Error registrando negocio:', error);
       toast({
         title: "Error",
         description: "No se pudo registrar el negocio.",
