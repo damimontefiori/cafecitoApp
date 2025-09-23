@@ -51,7 +51,7 @@ export default function AdminRegister() {
       return; // Still checking auth state
     }
     
-    if (user && !businessCheckDone) {
+    if (user) {
       // User is authenticated, check if they have a business
       const checkBusiness = async () => {
         console.log('🔍 [RegisterPage] Verificando si el usuario ya tiene negocio...');
@@ -61,15 +61,16 @@ export default function AdminRegister() {
           
           if (existingBusiness) {
             console.log('✅ [RegisterPage] Usuario ya tiene negocio, redirigiendo...');
-            router.push(`/admin/${existingBusiness.id}`);
+            // Use window.location.href for immediate navigation
+            window.location.href = `/admin/${existingBusiness.id}`;
           } else {
             console.log('📝 [RegisterPage] Usuario no tiene negocio, mostrando formulario de registro');
             setStep('register');
+            setBusinessCheckDone(true);
           }
         } catch (error) {
           console.error('🚨 [RegisterPage] Error checking business:', error);
           setStep('register');
-        } finally {
           setBusinessCheckDone(true);
         }
       };
@@ -81,7 +82,7 @@ export default function AdminRegister() {
       setStep('auth');
       setBusinessCheckDone(true);
     }
-  }, [user, loading, router]); // Removed businessCheckDone from dependencies
+  }, [user, loading, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
