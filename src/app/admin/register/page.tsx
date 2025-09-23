@@ -123,7 +123,7 @@ export default function AdminRegister() {
       const business = await createBusiness({
         name: values.businessName,
         adminId: user.uid,
-        adminEmail: user.email,
+        adminEmail: user.email || '',
       });
 
       toast({
