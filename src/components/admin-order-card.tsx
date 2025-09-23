@@ -22,9 +22,10 @@ import {
 interface AdminOrderCardProps {
   order: Order;
   onMarkAsServed: (orderId: string) => void;
+  isNew?: boolean;
 }
 
-export function AdminOrderCard({ order, onMarkAsServed }: AdminOrderCardProps) {
+export function AdminOrderCard({ order, onMarkAsServed, isNew = false }: AdminOrderCardProps) {
   const [isMarking, setIsMarking] = useState(false);
 
   const handleMarkAsServed = async () => {
@@ -46,7 +47,9 @@ export function AdminOrderCard({ order, onMarkAsServed }: AdminOrderCardProps) {
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md">
+    <Card className={`transition-all duration-200 hover:shadow-md ${
+      isNew ? 'ring-2 ring-green-500 bg-green-50 animate-pulse' : ''
+    }`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="space-y-1">

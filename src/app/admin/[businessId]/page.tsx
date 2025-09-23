@@ -21,6 +21,7 @@ export default function AdminPanel() {
   const [business, setBusiness] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const prevOrdersCount = useRef(0);
   const { toast } = useToast();
 
@@ -98,9 +99,27 @@ export default function AdminPanel() {
       console.log('📦 [AdminPanel] Pedidos actualizados en tiempo real:', ordersData.length);
       
       // Detectar nuevos pedidos
-      if (ordersData.length > prevOrdersCount.current) {
+      if (ordersData.length > prevOrdersCount.current && prevOrdersCount.current > 0) {
         console.log('🆕 [AdminPanel] ¡Nuevo pedido detectado!');
-        // TODO: Aquí podríamos añadir una notificación visual o sonido
+        
+        // Encontrar el nuevo pedido (el más reciente)
+        const newOrder = ordersData[0]; // Como están ordenados por fecha desc, el primero es el más nuevo
+        
+        // Marcar el pedido como nuevo por unos segundos
+        setNewOrderIds(prev => new Set(prev).add(newOrder.id));
+        setTimeout(() => {
+          setNewOrderIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(newOrder.id);
+            return newSet;
+          });
+        }, 5000); // Quitar el highlight después de 5 segundos
+        
+        toast({
+          title: "🔔 ¡Nuevo pedido!",
+          description: `${newOrder.name} pidió un ${newOrder.coffeeType} ${newOrder.size}`,
+          duration: 5000,
+        });
       }
       
       prevOrdersCount.current = ordersData.length;
@@ -166,7 +185,13 @@ export default function AdminPanel() {
       <div className="container mx-auto px-4 mb-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold">Panel de Administración</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">Panel de Administración</h2>
+              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                En vivo
+              </div>
+            </div>
             <p className="text-muted-foreground">Hola {user.displayName}</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -217,6 +242,7 @@ export default function AdminPanel() {
                     key={order.id} 
                     order={order} 
                     onMarkAsServed={handleMarkAsServed}
+                    isNew={newOrderIds.has(order.id)}
                   />
                 ))
               )}
@@ -235,6 +261,7 @@ export default function AdminPanel() {
                     key={order.id} 
                     order={order} 
                     onMarkAsServed={handleMarkAsServed}
+                    isNew={newOrderIds.has(order.id)}
                   />
                 ))
               )}
@@ -253,6 +280,7 @@ export default function AdminPanel() {
                     key={order.id} 
                     order={order} 
                     onMarkAsServed={handleMarkAsServed}
+                    isNew={newOrderIds.has(order.id)}
                   />
                 ))
               )}
