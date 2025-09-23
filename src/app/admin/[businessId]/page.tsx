@@ -155,16 +155,24 @@ export default function AdminPanel() {
       <Header businessName={`${business.name} - Admin`} />
       
       <div className="container mx-auto px-4 mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
             <h2 className="text-2xl font-bold">Panel de Administración</h2>
             <p className="text-muted-foreground">Hola {user.displayName}</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.open(`/business/${businessId}`, '_blank')}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button 
+              variant="outline" 
+              onClick={() => window.open(`/business/${businessId}`, '_blank')}
+              className="w-full sm:w-auto"
+            >
               Ver página pública
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut}
+              className="w-full sm:w-auto"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar sesión
             </Button>
