@@ -24,10 +24,16 @@ export default function BusinessPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('🔧 [BusinessPage] useEffect ejecutado, businessId:', businessId);
+    
     const loadBusinessData = async () => {
       try {
+        console.log('🔍 [BusinessPage] Cargando datos del negocio...');
         const businessData = await getBusinessById(businessId);
+        console.log('📊 [BusinessPage] Resultado de negocio:', businessData);
+        
         if (!businessData) {
+          console.log('❌ [BusinessPage] Negocio no encontrado');
           toast({
             title: "Negocio no encontrado",
             description: "El negocio que buscas no existe.",
@@ -37,12 +43,16 @@ export default function BusinessPage() {
         }
 
         setBusiness(businessData);
+        console.log('✅ [BusinessPage] Negocio cargado, cargando órdenes...');
+        
         const ordersData = await getOrdersByBusinessId(businessId);
+        console.log('📦 [BusinessPage] Órdenes cargadas:', ordersData.length);
         setOrders(ordersData);
       } catch (error) {
+        console.error('🚨 [BusinessPage] Error al cargar datos:', error);
         toast({
           title: "Error",
-          description: "No se pudo cargar la información del negocio.",
+          description: `No se pudieron cargar los pedidos. Error: ${error instanceof Error ? error.message : 'Desconocido'}`,
           variant: "destructive",
         });
       } finally {

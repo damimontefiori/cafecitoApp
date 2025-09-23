@@ -24,8 +24,16 @@ export default function AdminPanel() {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('🔧 [AdminPanel] useEffect ejecutado, businessId:', businessId);
+    
     const unsubscribe = onAuthChange(async (authUser) => {
+      console.log('👤 [AdminPanel] Estado de auth cambió:', { 
+        user: authUser ? authUser.email : 'null',
+        uid: authUser?.uid 
+      });
+      
       if (!authUser) {
+        console.log('❌ [AdminPanel] Usuario no autenticado, redirigiendo');
         router.push('/admin/register');
         return;
       }
@@ -33,8 +41,12 @@ export default function AdminPanel() {
       setUser(authUser);
       
       try {
+        console.log('🔍 [AdminPanel] Cargando datos del negocio...');
         const businessData = await getBusinessById(businessId);
+        console.log('📊 [AdminPanel] Resultado de negocio:', businessData);
+        
         if (!businessData) {
+          console.log('❌ [AdminPanel] Negocio no encontrado');
           toast({
             title: "Negocio no encontrado",
             description: "El negocio que buscas no existe.",
@@ -45,6 +57,7 @@ export default function AdminPanel() {
         }
 
         if (businessData.adminId !== authUser.uid) {
+          console.log('🚫 [AdminPanel] Acceso denegado, adminId:', businessData.adminId, 'userUid:', authUser.uid);
           toast({
             title: "Acceso denegado",
             description: "No tienes permisos para administrar este negocio.",
@@ -55,11 +68,13 @@ export default function AdminPanel() {
         }
 
         setBusiness(businessData);
+        console.log('✅ [AdminPanel] Negocio cargado exitosamente, cargando órdenes...');
         await loadOrders();
       } catch (error) {
+        console.error('🚨 [AdminPanel] Error al cargar información del negocio:', error);
         toast({
           title: "Error",
-          description: "No se pudo cargar la información del negocio.",
+          description: `No se pudo cargar la información del negocio. Error: ${error instanceof Error ? error.message : 'Desconocido'}`,
           variant: "destructive",
         });
       } finally {
@@ -71,10 +86,13 @@ export default function AdminPanel() {
   }, [businessId, router, toast]);
 
   const loadOrders = async () => {
+    console.log('📦 [AdminPanel] Cargando órdenes...');
     try {
       const ordersData = await getOrdersByBusinessId(businessId);
+      console.log('📦 [AdminPanel] Órdenes cargadas:', ordersData.length);
       setOrders(ordersData);
     } catch (error) {
+      console.error('🚨 [AdminPanel] Error al cargar órdenes:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los pedidos.",
