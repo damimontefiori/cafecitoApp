@@ -32,12 +32,12 @@ export async function getOrdersByBusinessId(businessId: string): Promise<Order[]
     const ordersCol = collection(db, 'orders');
     console.log('📄 [getOrdersByBusinessId] Colección de pedidos obtenida');
     
+    // Query simple sin orderBy para evitar problemas de índice
     const q = query(
       ordersCol, 
-      where('businessId', '==', businessId),
-      orderBy('createdAt', 'desc')
+      where('businessId', '==', businessId)
     );
-    console.log('🔍 [getOrdersByBusinessId] Query creada');
+    console.log('🔍 [getOrdersByBusinessId] Query creada (sin orderBy)');
     
     const orderSnapshot = await getDocs(q);
     console.log('📥 [getOrdersByBusinessId] Snapshot obtenido, cantidad de docs:', orderSnapshot.docs.length);
@@ -63,6 +63,9 @@ export async function getOrdersByBusinessId(businessId: string): Promise<Order[]
         createdAt: data.createdAt.toDate(),
       };
     });
+
+    // Ordenar en memoria por fecha de creación (más reciente primero)
+    orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     console.log('✅ [getOrdersByBusinessId] Pedidos cargados exitosamente:', orders.length);
     return orders;
