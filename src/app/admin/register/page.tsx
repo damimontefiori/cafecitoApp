@@ -180,7 +180,7 @@ export default function AdminRegister() {
           <div className="flex justify-center mb-4">
             <Coffee className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl">CafeCito Admin</CardTitle>
+          <CardTitle className="text-2xl">Latte Hub Admin</CardTitle>
           <CardDescription>
             {loading 
               ? 'Verificando autenticación...'

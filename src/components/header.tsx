@@ -10,7 +10,7 @@ export function Header({ businessName }: HeaderProps) {
       <div className="inline-flex items-center gap-4">
         <CoffeeIcon className="h-12 w-12 text-primary" />
         <h1 className="font-headline text-5xl font-bold tracking-tight text-foreground">
-          {businessName || "Coffee Queue"}
+          {businessName || "Latte Hub"}
         </h1>
       </div>
       <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">

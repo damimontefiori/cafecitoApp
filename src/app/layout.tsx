@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Coffee Queue',
+  title: 'Latte Hub',
   description: 'Desarrollada por Dami Montefiori.',
 };
 

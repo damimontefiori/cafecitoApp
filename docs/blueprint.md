@@ -1,4 +1,4 @@
-# **App Name**: Coffee Queue
+# **App Name**: Latte Hub
 
 ## Core Features:
 
