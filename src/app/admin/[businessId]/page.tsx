@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { onAuthChange, signOut } from '@/services/auth-service';
 import { getBusinessById } from '@/services/business-service';
-import { getOrdersByBusinessId, markOrderAsServed } from '@/services/order-service';
+import { subscribeToOrdersByBusinessId, markOrderAsServed } from '@/services/order-service';
 import { Header } from '@/components/header';
 import { AdminOrderCard } from '@/components/admin-order-card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ export default function AdminPanel() {
   const [business, setBusiness] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const prevOrdersCount = useRef(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,8 +69,7 @@ export default function AdminPanel() {
         }
 
         setBusiness(businessData);
-        console.log('✅ [AdminPanel] Negocio cargado exitosamente, cargando órdenes...');
-        await loadOrders();
+        console.log('✅ [AdminPanel] Negocio cargado exitosamente');
       } catch (error) {
         console.error('🚨 [AdminPanel] Error al cargar información del negocio:', error);
         toast({
@@ -85,30 +85,39 @@ export default function AdminPanel() {
     return () => unsubscribe();
   }, [businessId, router, toast]);
 
-  const loadOrders = async () => {
-    console.log('📦 [AdminPanel] Cargando órdenes...');
-    try {
-      const ordersData = await getOrdersByBusinessId(businessId);
-      console.log('📦 [AdminPanel] Órdenes cargadas:', ordersData.length);
-      setOrders(ordersData);
-    } catch (error) {
-      console.error('🚨 [AdminPanel] Error al cargar órdenes:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los pedidos.",
-        variant: "destructive",
-      });
+  // useEffect separado para manejar el listener de pedidos en tiempo real
+  useEffect(() => {
+    if (!business || !user) {
+      console.log('⏳ [AdminPanel] Esperando business y user para configurar listener de pedidos...');
+      return;
     }
-  };
+
+    console.log('🔔 [AdminPanel] Configurando listener de pedidos en tiempo real para:', businessId);
+    
+    const unsubscribeOrders = subscribeToOrdersByBusinessId(businessId, (ordersData) => {
+      console.log('📦 [AdminPanel] Pedidos actualizados en tiempo real:', ordersData.length);
+      
+      // Detectar nuevos pedidos
+      if (ordersData.length > prevOrdersCount.current) {
+        console.log('🆕 [AdminPanel] ¡Nuevo pedido detectado!');
+        // TODO: Aquí podríamos añadir una notificación visual o sonido
+      }
+      
+      prevOrdersCount.current = ordersData.length;
+      setOrders(ordersData);
+    });
+
+    return () => {
+      console.log('🔚 [AdminPanel] Limpiando listener de pedidos');
+      unsubscribeOrders();
+    };
+  }, [business, user, businessId]); // Dependencias: business, user, businessId
 
   const handleMarkAsServed = async (orderId: string) => {
     try {
       await markOrderAsServed(orderId);
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId ? { ...order, status: 'served' } : order
-        )
-      );
+      // No necesitamos actualizar manualmente el estado
+      // El listener en tiempo real se encargará de actualizar los pedidos
       toast({
         title: "Pedido marcado como servido",
         description: "El pedido ha sido actualizado exitosamente.",
